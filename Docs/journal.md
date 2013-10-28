@@ -13,3 +13,9 @@ Giving up on IDA, I remembered that DOSBox has its own debugger, so off I went i
 I fired up DOSBox with its built-in debugger and slowly acclimated myself to its awkward UI, familiarizing myself with necessary keystrokes. The HELP command showed me the only command I was really interested in: `BPINT`.
 
 This `BPINT` command enables you to set a BreakPoint on an INTerrupt call (an operating system call in DOS's case) so that you can stop the program when it, say, reads from a file! Awesome. Now we're in business. From here it's just a "simple" matter of tracing program execution after reading interesting-looking files, like `SCENE01.DAT`. I may end up having to `MEMDUMPBIN CS:IP` the code to get a better handle on it in a more friendly UI. I also foresee many `MEMDUMPBIN DS:DX`s in my future, dumping the decoded data (somehow, somewhere) after it's been read from the file.
+
+Oh yeah, now I remember why I started writing this journal... to actually document binary data formats and interesting points in the code. Duh. Let's get to it.
+
+I fired up the game in the debugger and made my way through the intro screens and menu system to get to the default course/race/whatever. Immediately following the copy protection screen and passing it with flying colors (thank you, whoever hacked that), I stopped execution at the first `BPINT` trap on `INT 21 3F` (read file). Got here from a `CALL 01A5:0DAE`.
+
+Offset `0x10240` was read from `SCENE01.DAT`; haven't figured out how that offset was calculated yet, but I'm sure I'll get to that soon enough. Opening this file up in HxD shows me a big pile of what looks like pairs of 8-bit values with some sort of alternating pattern. No idea what this could be yet... keep diggin.
