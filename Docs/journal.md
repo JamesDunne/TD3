@@ -18,4 +18,19 @@ Oh yeah, now I remember why I started writing this journal... to actually docume
 
 I fired up the game in the debugger and made my way through the intro screens and menu system to get to the default course/race/whatever. Immediately following the copy protection screen and passing it with flying colors (thank you, whoever hacked that), I stopped execution at the first `BPINT` trap on `INT 21 3F` (read file). Got here from a `CALL 01A5:0DAE`.
 
-Offset `0x10240` was read from `SCENE01.DAT`; haven't figured out how that offset was calculated yet, but I'm sure I'll get to that soon enough. Opening this file up in HxD shows me a big pile of what looks like pairs of 8-bit values with some sort of alternating pattern. No idea what this could be yet... keep diggin.
+`0x2137` bytes were read from offset `0x10240` in `SCENE01.DAT`; haven't figured out how that offset was calculated yet, but I'm sure I'll get to that soon enough. Opening this file up in HxD shows me a big pile of what looks like pairs of 8-bit values with some sort of alternating pattern. No idea what this could be yet... keep diggin.
+
+After stepping through a few more instructions and jumps, I found what appears to be a LZ (Lempel-Ziv) decompression loop at `08FE:104D`:
+
+    08FE:104D  8B76FE              mov  si,[bp-02]             ss:[F93E]=0003
+    08FE:1050  D1E6                shl  si,1
+    08FE:1052  81C697B2            add  si,B297
+    08FE:1056  813C0F0F            cmp  word [si],0F0F         ds:[B29B]=6464
+    08FE:105A  7604                jbe  00001060 ($+4)         (down)
+    08FE:105C  812C0202            sub  word [si],0202         ds:[B29B]=6464
+    08FE:1060  FF46FE              inc  word [bp-02]           ss:[F93E]=0003
+    08FE:1063  817EFE0001          cmp  word [bp-02],0100      ss:[F93E]=0003
+    08FE:1068  7CE3                jl   0000104D ($-1d)        (up)
+    08FE:106A  5E                  pop  si
+
+I'm not sure yet if that is an actual LZ decompressor, but the `cmp` to `0100h` at `1063` there is a strong hint in that direction because of the way LZ compression works. You don't bother storing the first 256 (100h) entries in the dictionary because they're redundant. Then again, I could be totally wrong here and this code is likely something entirely different.
