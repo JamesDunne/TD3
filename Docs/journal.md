@@ -34,3 +34,9 @@ After stepping through a few more instructions and jumps, I found what appears t
     08FE:106A  5E                  pop  si
 
 I'm not sure yet if that is an actual LZ decompressor, but the `cmp` to `0100h` at `1063` there is a strong hint in that direction because of the way LZ compression works. You don't bother storing the first 256 (100h) entries in the dictionary because they're redundant. Then again, I could be totally wrong here and this code is likely something entirely different.
+
+Hmm, I strongly suspect all of the above is nonsense. I notice after playing a while that when I crash, a read-file call is made to `SCENE01.DAT` every time. That seems a better indicator of where to start looking for the decode calls.
+
+An LSEEK (`INT 21h AH=42h`) command is issued immediately after `SCENE01.DAT` is opened and the file position is moved to `17D75` each time. Then `E29` bytes are read from that location.
+
+I've now found an interesting point in the code where the function `1F94:0049` is called with stack arguments pointing to the `DS:DX` where the data was loaded from the file, in this case `81DE:4E5A`.
