@@ -50,3 +50,15 @@ That function at `1F94:0049` I found yesterday I suspect is strongly related to 
 While watching the function execute I did see some semblance of decompression work: lots of bit shifting, memory indexing, and counting, but let's not fool ourselves here; those operations are the basic building blocks of virtually all useful code lol.
 
 I should return to this tomorrow evening after work.
+
+2013-10-30 04:40 PM CST
+-----------------------
+Well yesterday was a wash. I had a headache the whole damn day... but enough excuses; let's get back to business!
+
+Every time I start up dosbox debugger I have to remember to set up the `BPINT` traps:
+
+    BPINT 21 3D  ; file open
+    BPINT 21 3F  ; file read
+    BPINT 21 42  ; file seek
+
+Let's be methodical about this now. I'll fire up TD3 and start recording traps just after I pass the copy protection screen with the ENTER key.
