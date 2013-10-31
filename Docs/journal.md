@@ -62,3 +62,36 @@ Every time I start up dosbox debugger I have to remember to set up the `BPINT` t
     BPINT 21 42  ; file seek
 
 Let's be methodical about this now. I'll fire up TD3 and start recording traps just after I pass the copy protection screen with the ENTER key.
+
+...
+
+Nope, that didn't happen. I find using DOSBox debugger too painful to use for reading and traversing code at a high level. I need a real tool that lets me analyze procedures and rename stack labels, etc. I ended up digging deep into IDA Pro 6.1 to try to figure out how to disassemble all this code.
+
+As it turns out `TD3.EXE` is packed using some obscure EXE packer tool. If you try to naively disassemble it with any disassembler, all you'll get is the start method which copies data from data segments and jumps to it. Not very useful.
+
+I don't know what EXE packer tool was used and there aren't any obvious signatures for it to advertise itself with. What I did to get a useful disassembly is I used DOSBOX's `debug td3.exe` to breakpoint at the very first instruction of the program and then single-stepped until the real program was fully unpacked in memory and far-jumped to. I could tell which was the final jump-to-unpack because the instruction to do so was a `JMP FAR DS:DX` or something to that effect. One doesn't dynamically jump to random locations in memory all that often so it sticks out in the debugger view like a sore thumb.
+
+Anyway, once I found the entry point (CS:IP) in conventional memory, I took advantage of DOSBOX debugger's `MEMDUMPBIN 0:0 100000` to just dump the entire 16M of memory out to disk in a single BIN file. This is probably overkill but I don't want the analysis to miss any potential code. I also wrote down the CS:IP, which in this case was `1AF0:001C`. I think that seg:offs might actually be hard-coded or at least derived statically from the packed EXE data. It seems to always end up as that value.
+
+I then fed this `MEMDUMP.BIN` file to IDA Pro who then told me to pick a start offset of my choosing and press C to start code analysis at that point. Great! Now we're in business... Yes I've said that before, but I'm getting more serious about it lol.
+
+**NOTE**: The `MEMDUMP.BIN` file is actually saved in your VirtualStore directory for your user account on Windows, e.g. `C:\Users\USERNAME\AppData\Local\VirtualStore\Program Files (x86)\DOSBox-0.74\`. I had to use sysinternals Process Explorer to find that path lol. DOSBOX: you should know better than to try to write files to system folders like program files. Windows: you should pick a slightly less VERY STUPID path for your end-user trickery here. Alright, moving along...
+
+Knowing that DOS segments are exactly `0x10` bytes apart (4 bits), it's just a simple matter to convert a seg:offs pair into a linear offset into the binary file: `(segment << 4) + offset` or `(segment * 16) + offset` for you non-bit-twiddlers out there. It's best to keep figures in hexadecimal in order to maintain sanity, so that offset ends up as `0x1AF1C` (`1AF0 << 4 = 1AF00 + 001C = 1AF1C`). Left-shifting (`<<`) by 4 bits in hexadecimal just adds another zero to the right because each hex digit is represented by exactly 4 bits.
+
+Anyway, before we press the big C key and let IDA go nuts, we have to start defining segments for IDA to decode into. This is sort of an oddball manual process and I'm not sure why IDA doesn't do it itself. Essentially what we do is start with our initial CS segment (`1AF0`) and define that, then search for `CALL FAR PTR` instructions and read their immediate data to find out what other segment values are expected and/or commonly used.
+
+IDA's Segments subview is extremely non-intuitive, but once you figure it out it's rather easy to use. Use `shift-F7` to open the Segments subview. A default `seg000` should already exist which represents the entire 16M binary image as a single segment. This is flawed from the start because a DOS segment can only address `0x10000` bytes, an order of magnitude shy of the total memory available of `0x100000` bytes (1MB exactly). This is why segments exist in the first place heh.
+
+Let's create a new segment to represent `1AF0`. Press `Ins` or right-click and pick the Add menu option. Enter the following values:
+
+    Segment name:  seg1AF0
+    Start address: 0x1AF00
+    End address:   0x100000
+    Base:          0x1AF0
+    Class:         CODE
+    16-bit segment
+
+Essentially, the `Base` value is the CS register value assumed in the ASM code that falls within that segment declaration. The `Start address` value is the linear offset in the binary file of where the code can be found for that segment. This is calculated with our trusty `(segment << 4) + offset` where `offset` in this case is always 0, so in other words we always just add an extra 0 to the right of the segment value in hex to determine its starting linear offset in the binary file. The `End address` will come in handy later when we start to add more segments, but for now we just set it to the end of the whole file.
+
+I've already done much of the grunt work here in ripping through the disassembled code from the start point and finding all `CALL FAR PTR` instructions and creating explicit segments for their target FAR addresses.
