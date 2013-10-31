@@ -40,3 +40,25 @@ Hmm, I strongly suspect all of the above is nonsense. I notice after playing a w
 An LSEEK (`INT 21h AH=42h`) command is issued immediately after `SCENE01.DAT` is opened and the file position is moved to `17D75` each time. Then `E29` bytes are read from that location.
 
 I've now found an interesting point in the code where the function `1F94:0049` is called with stack arguments pointing to the `DS:DX` where the data was loaded from the file, in this case `81DE:4E5A`.
+
+2013-10-28 09:30 AM CST
+-----------------------
+I won't be able to make any progress today due to work schedule and prior commitments for the rest of the day.
+
+That function at `1F94:0049` I found yesterday I suspect is strongly related to decoding the scene data. Which scene data, and how it decodes, both remain a mystery as yet. I really need a decent C decompiler to make sense of this code. I can step through it in the DOSBox debugger but reading pages of raw bytes and seeing registers get modified is not exactly revealing of the true purpose of the code there. I wish the debugger would put a little extra effort in and highlight bytes in the memory view when they get read or written. Also trapping on memory reads would be wonderful. Having a call stack view in DOSBox debugger wouldn't be so bad but I suspect that's a non-trivial thing to implement. It's very easy to get lost in the sea of CALLs and RETFs.
+
+While watching the function execute I did see some semblance of decompression work: lots of bit shifting, memory indexing, and counting, but let's not fool ourselves here; those operations are the basic building blocks of virtually all useful code lol.
+
+I should return to this tomorrow evening after work.
+
+2013-10-30 04:40 PM CST
+-----------------------
+Well yesterday was a wash. I had a headache the whole damn day... but enough excuses; let's get back to business!
+
+Every time I start up dosbox debugger I have to remember to set up the `BPINT` traps:
+
+    BPINT 21 3D  ; file open
+    BPINT 21 3F  ; file read
+    BPINT 21 42  ; file seek
+
+Let's be methodical about this now. I'll fire up TD3 and start recording traps just after I pass the copy protection screen with the ENTER key.
