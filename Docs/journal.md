@@ -97,3 +97,7 @@ Essentially, the `Base` value is the CS register value assumed in the ASM code t
 I've already done much of the grunt work here in ripping through the disassembled code from the entry point and finding all `CALL FAR PTR` instructions and creating explicit segments for their target FAR addresses. I can never be sure if I got all the code disassembled since IDA doesn't give me any obvious way to re-analyze a particular piece of code.
 
 I just committed the IDB and BIN files that I'm using to the Data/ folder so give those a look-over if you want to follow along.
+
+The first thing I did was search for all INT 21h calls and name the wrapping procedures accordingly: `fopen`, `fread`, `fseek`, `fclose`, `fsize`, etc. Then I searched for references to those procedures and tried to gleam some meaning from those calling procs. I found one that did a sequence of `fopen`, `fsize`, `fread`, `fclose` so I named it `floadFile` (at `seg0214:0E1A`).
+
+Now it's a matter of finding all references to this convenience `floadFile` proc. I'm not exactly sure where to look for the best candidate to find scene data decoding code. I think I'll fire up DOSBOX debugger again and breakpoint at this proc when `SCENE01.DAT` gets opened ... yet again.
