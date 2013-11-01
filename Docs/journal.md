@@ -94,4 +94,6 @@ Let's create a new segment to represent `1AF0`. Press `Ins` or right-click and p
 
 Essentially, the `Base` value is the CS register value assumed in the ASM code that falls within that segment declaration. The `Start address` value is the linear offset in the binary file of where the code can be found for that segment. This is calculated with our trusty `(segment << 4) + offset` where `offset` in this case is always 0, so in other words we always just add an extra 0 to the right of the segment value in hex to determine its starting linear offset in the binary file. The `End address` will come in handy later when we start to add more segments, but for now we just set it to the end of the whole file.
 
-I've already done much of the grunt work here in ripping through the disassembled code from the start point and finding all `CALL FAR PTR` instructions and creating explicit segments for their target FAR addresses.
+I've already done much of the grunt work here in ripping through the disassembled code from the entry point and finding all `CALL FAR PTR` instructions and creating explicit segments for their target FAR addresses. I can never be sure if I got all the code disassembled since IDA doesn't give me any obvious way to re-analyze a particular piece of code.
+
+I just committed the IDB and BIN files that I'm using to the Data/ folder so give those a look-over if you want to follow along.
